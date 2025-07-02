@@ -10,7 +10,7 @@ from stl import mesh, Mode
 # Dice size parameters in millimeters
 DICE_SIZE = 16.0
 CORNER_RADIUS = 1.0
-DOT_RADIUS = 1.5
+DOT_RADIUS = 2.0
 
 
 class SphereOctant:
@@ -194,6 +194,17 @@ def bridge_arcs(arc0, arc1, flip_normals=False):
     return faces
 
 
+def bridge_fan(base, arc, flip_normals=False):
+    faces = []
+    for i in range(len(arc) - 1):
+        faces.append([base, arc[i], arc[i + 1]])
+
+    if flip_normals:
+        faces = [[face[0], face[2], face[1]] for face in faces]
+
+    return faces
+
+
 def GenerateCornerOctants(dice_size, corner_radius):
     # Each ConcaveSphereOctant represents a rounded corner of the die (a cube),
     # and the different rotations correspond to the eight corners of the cube,
@@ -351,6 +362,37 @@ def generate_one_dot_die_face(face_rotation, die_size, corner_radius):
     mesh_faces = []
     for octant in dot_octants.values():
         mesh_faces.extend(octant.faces)
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    mesh_faces.extend(
+        bridge_fan(p0, dot_octants[CornerRotation.DOWN_90].local_xy_vertices())
+    )
+    mesh_faces.extend(
+        bridge_fan(p1, dot_octants[CornerRotation.DOWN_180].local_xy_vertices())
+    )
+    mesh_faces.extend(
+        bridge_fan(p2, dot_octants[CornerRotation.DOWN_270].local_xy_vertices())
+    )
+    mesh_faces.extend(
+        bridge_fan(p3, dot_octants[CornerRotation.DOWN_0].local_xy_vertices())
+    )
+
+    mesh_faces.append(
+        [p0, dot_octants[CornerRotation.DOWN_180].local_xy_vertices()[0], p1]
+    )
+    mesh_faces.append(
+        [p1, dot_octants[CornerRotation.DOWN_270].local_xy_vertices()[0], p2]
+    )
+    mesh_faces.append(
+        [p2, dot_octants[CornerRotation.DOWN_0].local_xy_vertices()[0], p3]
+    )
+    mesh_faces.append(
+        [p3, dot_octants[CornerRotation.DOWN_90].local_xy_vertices()[0], p0]
+    )
 
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
