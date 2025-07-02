@@ -62,10 +62,10 @@ class ConcaveSphereOctant:
 
     def local_xy_vertices(self):
         """Returns the vertices in the xy plane."""
-        verticies = []
+        vertices = []
         for i in range(self.resolution):
-            verticies.append(self.vertices[i][0])
-        return verticies
+            vertices.append(self.vertices[i][-1])
+        return vertices
 
     def rotate(self, rotation_matrix):
         self.vertices = np.matmul(self.vertices, rotation_matrix)
@@ -76,7 +76,7 @@ class ConcaveSphereOctant:
         self.faces += vector
 
 
-class Rotations(Enum):
+class Rotation(Enum):
     UP_0 = 0
     UP_90 = 1
     UP_180 = 2
@@ -87,43 +87,43 @@ class Rotations(Enum):
     DOWN_270 = 7
 
 
-octant_rotation_matricies = {
-    Rotations.UP_0: [
+octant_rotation_matrices = {
+    Rotation.UP_0: [
         [1, 0, 0],
         [0, 1, 0],
         [0, 0, 1],
     ],
-    Rotations.UP_90: [
+    Rotation.UP_90: [
         [0, 1, 0],
         [-1, 0, 0],
         [0, 0, 1],
     ],
-    Rotations.UP_270: [
+    Rotation.UP_270: [
         [0, -1, 0],
         [1, 0, 0],
         [0, 0, 1],
     ],
-    Rotations.UP_180: [
+    Rotation.UP_180: [
         [-1, 0, 0],
         [0, -1, 0],
         [0, 0, 1],
     ],
-    Rotations.DOWN_0: [
+    Rotation.DOWN_0: [
         [-1, 0, 0],
         [0, 1, 0],
         [0, 0, -1],
     ],
-    Rotations.DOWN_90: [
+    Rotation.DOWN_90: [
         [0, 1, 0],
         [1, 0, 0],
         [0, 0, -1],
     ],
-    Rotations.DOWN_270: [
+    Rotation.DOWN_270: [
         [0, -1, 0],
         [-1, 0, 0],
         [0, 0, -1],
     ],
-    Rotations.DOWN_180: [
+    Rotation.DOWN_180: [
         [1, 0, 0],
         [0, -1, 0],
         [0, 0, -1],
@@ -132,17 +132,113 @@ octant_rotation_matricies = {
 
 octant_shift = np.array([1, 1, 1])
 
-sphere_octants = []
-for rotation_matrix in octant_rotation_matricies.values():
+
+def bridge_arcs(arc0, arc1, flip_normal=False):
+    faces = []
+    for i in range(len(arc0) - 1):
+        if flip_normal:
+            faces.append([arc0[i], arc1[i], arc0[i + 1]])
+            faces.append([arc0[i + 1], arc1[i], arc1[i + 1]])
+        else:
+            faces.append([arc0[i], arc0[i + 1], arc1[i]])
+            faces.append([arc0[i + 1], arc1[i + 1], arc1[i]])
+    return faces
+
+
+# Generate the die's rounded corners.
+sphere_octants = {}
+for rotation in octant_rotation_matrices:
     octant = ConcaveSphereOctant(radius=1.0, resolution=10)
     octant.translate(octant_shift)
-    octant.rotate(rotation_matrix)
-    sphere_octants.append(octant)
+    octant.rotate(octant_rotation_matrices[rotation])
+    sphere_octants[rotation] = octant
 
 # Combine the octant's faces
 faces = []
-for octant in sphere_octants:
+for octant in sphere_octants.values():
     faces.extend(octant.faces)
+
+# Bridge the die's upper corners.
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_0].local_yz_vertices(),
+        sphere_octants[Rotation.UP_90].local_xz_vertices(),
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_90].local_yz_vertices(),
+        sphere_octants[Rotation.UP_180].local_xz_vertices(),
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_180].local_yz_vertices(),
+        sphere_octants[Rotation.UP_270].local_xz_vertices(),
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_270].local_yz_vertices(),
+        sphere_octants[Rotation.UP_0].local_xz_vertices(),
+    )
+)
+
+# Bridge the die's lower corners
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.DOWN_0].local_yz_vertices(),
+        sphere_octants[Rotation.DOWN_90].local_xz_vertices(),
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.DOWN_90].local_yz_vertices(),
+        sphere_octants[Rotation.DOWN_180].local_xz_vertices(),
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.DOWN_180].local_yz_vertices(),
+        sphere_octants[Rotation.DOWN_270].local_xz_vertices(),
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.DOWN_270].local_yz_vertices(),
+        sphere_octants[Rotation.DOWN_0].local_xz_vertices(),
+    )
+)
+
+# Bridge the die's upper and lower corners
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_0].local_xy_vertices(),
+        sphere_octants[Rotation.DOWN_90].local_xy_vertices()[::-1],
+        flip_normal=True,
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_90].local_xy_vertices(),
+        sphere_octants[Rotation.DOWN_0].local_xy_vertices()[::-1],
+        flip_normal=True,
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_180].local_xy_vertices(),
+        sphere_octants[Rotation.DOWN_270].local_xy_vertices()[::-1],
+        flip_normal=True,
+    )
+)
+faces.extend(
+    bridge_arcs(
+        sphere_octants[Rotation.UP_270].local_xy_vertices(),
+        sphere_octants[Rotation.DOWN_180].local_xy_vertices()[::-1],
+        flip_normal=True,
+    )
+)
 
 # Create the mesh
 octant_mesh = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
