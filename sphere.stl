@@ -10583,4 +10583,88 @@ facet normal 2.431077 -0.212688 0.000000
     vertex 8.000000 -7.000000 -7.000000
   endloop
 endfacet
+facet normal 0.000000 0.000000 196.000000
+  outer loop
+    vertex 7.000000 7.000000 8.000000
+    vertex -7.000000 -7.000000 8.000000
+    vertex 7.000000 -7.000000 8.000000
+  endloop
+endfacet
+facet normal 0.000000 0.000000 196.000000
+  outer loop
+    vertex 7.000000 7.000000 8.000000
+    vertex -7.000000 7.000000 8.000000
+    vertex -7.000000 -7.000000 8.000000
+  endloop
+endfacet
+facet normal 0.000000 0.000000 -196.000000
+  outer loop
+    vertex -7.000000 7.000000 -8.000000
+    vertex 7.000000 -7.000000 -8.000000
+    vertex -7.000000 -7.000000 -8.000000
+  endloop
+endfacet
+facet normal 0.000000 0.000000 -196.000000
+  outer loop
+    vertex -7.000000 7.000000 -8.000000
+    vertex 7.000000 7.000000 -8.000000
+    vertex 7.000000 -7.000000 -8.000000
+  endloop
+endfacet
+facet normal 0.000000 -196.000000 -0.000000
+  outer loop
+    vertex 7.000000 -8.000000 7.000000
+    vertex -7.000000 -8.000000 -7.000000
+    vertex 7.000000 -8.000000 -7.000000
+  endloop
+endfacet
+facet normal -0.000000 -196.000000 0.000000
+  outer loop
+    vertex 7.000000 -8.000000 7.000000
+    vertex -7.000000 -8.000000 7.000000
+    vertex -7.000000 -8.000000 -7.000000
+  endloop
+endfacet
+facet normal 0.000000 196.000000 0.000000
+  outer loop
+    vertex -7.000000 8.000000 7.000000
+    vertex 7.000000 8.000000 -7.000000
+    vertex -7.000000 8.000000 -7.000000
+  endloop
+endfacet
+facet normal -0.000000 196.000000 0.000000
+  outer loop
+    vertex -7.000000 8.000000 7.000000
+    vertex 7.000000 8.000000 7.000000
+    vertex 7.000000 8.000000 -7.000000
+  endloop
+endfacet
+facet normal -196.000000 -0.000000 0.000000
+  outer loop
+    vertex -8.000000 7.000000 7.000000
+    vertex -8.000000 -7.000000 -7.000000
+    vertex -8.000000 -7.000000 7.000000
+  endloop
+endfacet
+facet normal -196.000000 0.000000 -0.000000
+  outer loop
+    vertex -8.000000 7.000000 7.000000
+    vertex -8.000000 7.000000 -7.000000
+    vertex -8.000000 -7.000000 -7.000000
+  endloop
+endfacet
+facet normal 196.000000 0.000000 0.000000
+  outer loop
+    vertex 8.000000 7.000000 -7.000000
+    vertex 8.000000 -7.000000 7.000000
+    vertex 8.000000 -7.000000 -7.000000
+  endloop
+endfacet
+facet normal 196.000000 0.000000 -0.000000
+  outer loop
+    vertex 8.000000 7.000000 -7.000000
+    vertex 8.000000 7.000000 7.000000
+    vertex 8.000000 -7.000000 7.000000
+  endloop
+endfacet
 endsolid sphere.stl

@@ -82,7 +82,7 @@ class ConcaveSphereOctant:
         self.faces += vector
 
 
-class Rotation(Enum):
+class CornerRotation(Enum):
     UP_0 = 0
     UP_90 = 1
     UP_180 = 2
@@ -93,46 +93,89 @@ class Rotation(Enum):
     DOWN_270 = 7
 
 
-octant_rotation_matrices = {
-    Rotation.UP_0: [
+corner_rotation_matrices = {
+    CornerRotation.UP_0: [
         [1, 0, 0],
         [0, 1, 0],
         [0, 0, 1],
     ],
-    Rotation.UP_90: [
+    CornerRotation.UP_90: [
         [0, 1, 0],
         [-1, 0, 0],
         [0, 0, 1],
     ],
-    Rotation.UP_270: [
+    CornerRotation.UP_270: [
         [0, -1, 0],
         [1, 0, 0],
         [0, 0, 1],
     ],
-    Rotation.UP_180: [
+    CornerRotation.UP_180: [
         [-1, 0, 0],
         [0, -1, 0],
         [0, 0, 1],
     ],
-    Rotation.DOWN_0: [
+    CornerRotation.DOWN_0: [
         [-1, 0, 0],
         [0, 1, 0],
         [0, 0, -1],
     ],
-    Rotation.DOWN_90: [
+    CornerRotation.DOWN_90: [
         [0, 1, 0],
         [1, 0, 0],
         [0, 0, -1],
     ],
-    Rotation.DOWN_270: [
+    CornerRotation.DOWN_270: [
         [0, -1, 0],
         [-1, 0, 0],
         [0, 0, -1],
     ],
-    Rotation.DOWN_180: [
+    CornerRotation.DOWN_180: [
         [1, 0, 0],
         [0, -1, 0],
         [0, 0, -1],
+    ],
+}
+
+
+class FaceRotation(Enum):
+    TOP = 0
+    BOTTOM = 1
+    LEFT = 2
+    RIGHT = 3
+    FRONT = 4
+    BACK = 5
+
+
+face_rotation_matrices = {
+    FaceRotation.TOP: [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ],
+    FaceRotation.BOTTOM: [
+        [-1, 0, 0],
+        [0, 1, 0],
+        [0, 0, -1],
+    ],
+    FaceRotation.FRONT: [
+        [1, 0, 0],
+        [0, 0, 1],
+        [0, -1, 0],
+    ],
+    FaceRotation.BACK: [
+        [-1, 0, 0],
+        [0, 0, 1],
+        [0, 1, 0],
+    ],
+    FaceRotation.LEFT: [
+        [0, 0, 1],
+        [0, 1, 0],
+        [-1, 0, 0],
+    ],
+    FaceRotation.RIGHT: [
+        [0, 0, -1],
+        [0, 1, 0],
+        [1, 0, 0],
     ],
 }
 
@@ -155,10 +198,10 @@ def GenerateCornerOctants(dice_size, corner_radius):
     # ensuring all corners are covered with the correct orientation.
 
     sphere_octants = {}
-    for rotation in octant_rotation_matrices:
+    for rotation in corner_rotation_matrices:
         octant = ConcaveSphereOctant(radius=corner_radius, resolution=10)
         octant.translate(np.full([3], dice_size / 2 - corner_radius))
-        octant.rotate(octant_rotation_matrices[rotation])
+        octant.rotate(corner_rotation_matrices[rotation])
         sphere_octants[rotation] = octant
 
     return sphere_octants
@@ -169,26 +212,26 @@ def bridge_upper_corners(corners):
 
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_0].local_yz_vertices(),
-            corners[Rotation.UP_90].local_xz_vertices(),
+            corners[CornerRotation.UP_0].local_yz_vertices(),
+            corners[CornerRotation.UP_90].local_xz_vertices(),
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_90].local_yz_vertices(),
-            corners[Rotation.UP_180].local_xz_vertices(),
+            corners[CornerRotation.UP_90].local_yz_vertices(),
+            corners[CornerRotation.UP_180].local_xz_vertices(),
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_180].local_yz_vertices(),
-            corners[Rotation.UP_270].local_xz_vertices(),
+            corners[CornerRotation.UP_180].local_yz_vertices(),
+            corners[CornerRotation.UP_270].local_xz_vertices(),
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_270].local_yz_vertices(),
-            corners[Rotation.UP_0].local_xz_vertices(),
+            corners[CornerRotation.UP_270].local_yz_vertices(),
+            corners[CornerRotation.UP_0].local_xz_vertices(),
         )
     )
     return faces
@@ -199,26 +242,26 @@ def bridge_lower_corners(corners):
 
     faces.extend(
         bridge_arcs(
-            corners[Rotation.DOWN_0].local_yz_vertices(),
-            corners[Rotation.DOWN_90].local_xz_vertices(),
+            corners[CornerRotation.DOWN_0].local_yz_vertices(),
+            corners[CornerRotation.DOWN_90].local_xz_vertices(),
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.DOWN_90].local_yz_vertices(),
-            corners[Rotation.DOWN_180].local_xz_vertices(),
+            corners[CornerRotation.DOWN_90].local_yz_vertices(),
+            corners[CornerRotation.DOWN_180].local_xz_vertices(),
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.DOWN_180].local_yz_vertices(),
-            corners[Rotation.DOWN_270].local_xz_vertices(),
+            corners[CornerRotation.DOWN_180].local_yz_vertices(),
+            corners[CornerRotation.DOWN_270].local_xz_vertices(),
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.DOWN_270].local_yz_vertices(),
-            corners[Rotation.DOWN_0].local_xz_vertices(),
+            corners[CornerRotation.DOWN_270].local_yz_vertices(),
+            corners[CornerRotation.DOWN_0].local_xz_vertices(),
         )
     )
 
@@ -230,29 +273,29 @@ def bridge_upper_to_lower_corners(corners):
 
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_0].local_xy_vertices(),
-            corners[Rotation.DOWN_90].local_xy_vertices()[::-1],
+            corners[CornerRotation.UP_0].local_xy_vertices(),
+            corners[CornerRotation.DOWN_90].local_xy_vertices()[::-1],
             flip_normals=True,
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_90].local_xy_vertices(),
-            corners[Rotation.DOWN_0].local_xy_vertices()[::-1],
+            corners[CornerRotation.UP_90].local_xy_vertices(),
+            corners[CornerRotation.DOWN_0].local_xy_vertices()[::-1],
             flip_normals=True,
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_180].local_xy_vertices(),
-            corners[Rotation.DOWN_270].local_xy_vertices()[::-1],
+            corners[CornerRotation.UP_180].local_xy_vertices(),
+            corners[CornerRotation.DOWN_270].local_xy_vertices()[::-1],
             flip_normals=True,
         )
     )
     faces.extend(
         bridge_arcs(
-            corners[Rotation.UP_270].local_xy_vertices(),
-            corners[Rotation.DOWN_180].local_xy_vertices()[::-1],
+            corners[CornerRotation.UP_270].local_xy_vertices(),
+            corners[CornerRotation.DOWN_180].local_xy_vertices()[::-1],
             flip_normals=True,
         )
     )
@@ -271,6 +314,29 @@ def bridge_corners(corners):
     return faces
 
 
+def generate_die_face(rotation, die_size, corner_radius):
+    edge_length = die_size / 2 - corner_radius
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+    mesh_faces = np.array(
+        [
+            [p0, p2, p1],
+            [p0, p3, p2],
+        ]
+    )
+
+    return np.matmul(mesh_faces, face_rotation_matrices[rotation])
+
+
+def generate_die_faces(dice_size, corner_radius):
+    mesh_faces = []
+    for rotation in face_rotation_matrices:
+        mesh_faces.extend(generate_die_face(rotation, dice_size, corner_radius))
+    return mesh_faces
+
+
 def main():
 
     corners = GenerateCornerOctants(DICE_SIZE, CORNER_RADIUS)
@@ -281,6 +347,8 @@ def main():
         faces.extend(octant.faces)
 
     faces.extend(bridge_corners(corners))
+
+    faces.extend(generate_die_faces(DICE_SIZE, CORNER_RADIUS))
 
     # Create the mesh
     octant_mesh = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
