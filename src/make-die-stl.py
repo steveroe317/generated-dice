@@ -405,9 +405,20 @@ def generate_die_face(rotation, dot_count, die_size, corner_radius):
 
 
 def generate_die_faces(dice_size, corner_radius):
+    die_spec = (
+        (FaceRotation.TOP, 1),
+        (FaceRotation.BOTTOM, 0),
+        (FaceRotation.LEFT, 1),
+        (FaceRotation.RIGHT, 0),
+        (FaceRotation.FRONT, 1),
+        (FaceRotation.BACK, 0),
+    )
+
     mesh_faces = []
-    for rotation in face_rotation_matrices:
-        mesh_faces.extend(generate_die_face(rotation, 1, dice_size, corner_radius))
+    for rotation, dot_count in die_spec:
+        mesh_faces.extend(
+            generate_die_face(rotation, dot_count, dice_size, corner_radius)
+        )
     return mesh_faces
 
 
