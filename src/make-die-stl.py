@@ -133,15 +133,15 @@ octant_rotation_matrices = {
 octant_shift = np.array([1, 1, 1])
 
 
-def bridge_arcs(arc0, arc1, flip_normal=False):
+def bridge_arcs(arc0, arc1, flip_normals=False):
     faces = []
     for i in range(len(arc0) - 1):
-        if flip_normal:
-            faces.append([arc0[i], arc1[i], arc0[i + 1]])
-            faces.append([arc0[i + 1], arc1[i], arc1[i + 1]])
-        else:
-            faces.append([arc0[i], arc0[i + 1], arc1[i]])
-            faces.append([arc0[i + 1], arc1[i + 1], arc1[i]])
+        faces.append([arc0[i], arc0[i + 1], arc1[i]])
+        faces.append([arc0[i + 1], arc1[i + 1], arc1[i]])
+
+    if flip_normals:
+        faces = [[face[0], face[2], face[1]] for face in faces]
+
     return faces
 
 
@@ -228,28 +228,28 @@ def bridge_upper_to_lower_corners(corners):
         bridge_arcs(
             corners[Rotation.UP_0].local_xy_vertices(),
             corners[Rotation.DOWN_90].local_xy_vertices()[::-1],
-            flip_normal=True,
+            flip_normals=True,
         )
     )
     faces.extend(
         bridge_arcs(
             corners[Rotation.UP_90].local_xy_vertices(),
             corners[Rotation.DOWN_0].local_xy_vertices()[::-1],
-            flip_normal=True,
+            flip_normals=True,
         )
     )
     faces.extend(
         bridge_arcs(
             corners[Rotation.UP_180].local_xy_vertices(),
             corners[Rotation.DOWN_270].local_xy_vertices()[::-1],
-            flip_normal=True,
+            flip_normals=True,
         )
     )
     faces.extend(
         bridge_arcs(
             corners[Rotation.UP_270].local_xy_vertices(),
             corners[Rotation.DOWN_180].local_xy_vertices()[::-1],
-            flip_normal=True,
+            flip_normals=True,
         )
     )
 
