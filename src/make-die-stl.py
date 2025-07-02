@@ -145,105 +145,147 @@ def bridge_arcs(arc0, arc1, flip_normal=False):
     return faces
 
 
-# Generate the die's rounded corners.
-sphere_octants = {}
-for rotation in octant_rotation_matrices:
-    octant = ConcaveSphereOctant(radius=1.0, resolution=10)
-    octant.translate(octant_shift)
-    octant.rotate(octant_rotation_matrices[rotation])
-    sphere_octants[rotation] = octant
+def GenerateCornerOctants():
+    # Each ConcaveSphereOctant represents a rounded corner of the die (a cube),
+    # and the different rotations correspond to the eight corners of the cube,
+    # ensuring all corners are covered with the correct orientation.
 
-# Combine the octant's faces
-faces = []
-for octant in sphere_octants.values():
-    faces.extend(octant.faces)
+    sphere_octants = {}
+    for rotation in octant_rotation_matrices:
+        octant = ConcaveSphereOctant(radius=1.0, resolution=10)
+        octant.translate(octant_shift)
+        octant.rotate(octant_rotation_matrices[rotation])
+        sphere_octants[rotation] = octant
 
-# Bridge the die's upper corners.
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_0].local_yz_vertices(),
-        sphere_octants[Rotation.UP_90].local_xz_vertices(),
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_90].local_yz_vertices(),
-        sphere_octants[Rotation.UP_180].local_xz_vertices(),
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_180].local_yz_vertices(),
-        sphere_octants[Rotation.UP_270].local_xz_vertices(),
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_270].local_yz_vertices(),
-        sphere_octants[Rotation.UP_0].local_xz_vertices(),
-    )
-)
+    return sphere_octants
 
-# Bridge the die's lower corners
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.DOWN_0].local_yz_vertices(),
-        sphere_octants[Rotation.DOWN_90].local_xz_vertices(),
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.DOWN_90].local_yz_vertices(),
-        sphere_octants[Rotation.DOWN_180].local_xz_vertices(),
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.DOWN_180].local_yz_vertices(),
-        sphere_octants[Rotation.DOWN_270].local_xz_vertices(),
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.DOWN_270].local_yz_vertices(),
-        sphere_octants[Rotation.DOWN_0].local_xz_vertices(),
-    )
-)
 
-# Bridge the die's upper and lower corners
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_0].local_xy_vertices(),
-        sphere_octants[Rotation.DOWN_90].local_xy_vertices()[::-1],
-        flip_normal=True,
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_90].local_xy_vertices(),
-        sphere_octants[Rotation.DOWN_0].local_xy_vertices()[::-1],
-        flip_normal=True,
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_180].local_xy_vertices(),
-        sphere_octants[Rotation.DOWN_270].local_xy_vertices()[::-1],
-        flip_normal=True,
-    )
-)
-faces.extend(
-    bridge_arcs(
-        sphere_octants[Rotation.UP_270].local_xy_vertices(),
-        sphere_octants[Rotation.DOWN_180].local_xy_vertices()[::-1],
-        flip_normal=True,
-    )
-)
+def bridge_upper_corners(corners):
+    faces = []
 
-# Create the mesh
-octant_mesh = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
-for i, f in enumerate(faces):
-    octant_mesh.vectors[i] = f
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_0].local_yz_vertices(),
+            corners[Rotation.UP_90].local_xz_vertices(),
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_90].local_yz_vertices(),
+            corners[Rotation.UP_180].local_xz_vertices(),
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_180].local_yz_vertices(),
+            corners[Rotation.UP_270].local_xz_vertices(),
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_270].local_yz_vertices(),
+            corners[Rotation.UP_0].local_xz_vertices(),
+        )
+    )
+    return faces
 
-# Write the mesh to a file
-octant_mesh.save("sphere.stl", mode=Mode.ASCII)
+
+def bridge_lower_corners(corners):
+    faces = []
+
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.DOWN_0].local_yz_vertices(),
+            corners[Rotation.DOWN_90].local_xz_vertices(),
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.DOWN_90].local_yz_vertices(),
+            corners[Rotation.DOWN_180].local_xz_vertices(),
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.DOWN_180].local_yz_vertices(),
+            corners[Rotation.DOWN_270].local_xz_vertices(),
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.DOWN_270].local_yz_vertices(),
+            corners[Rotation.DOWN_0].local_xz_vertices(),
+        )
+    )
+
+    return faces
+
+
+def bridge_upper_to_lower_corners(corners):
+    faces = []
+
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_0].local_xy_vertices(),
+            corners[Rotation.DOWN_90].local_xy_vertices()[::-1],
+            flip_normal=True,
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_90].local_xy_vertices(),
+            corners[Rotation.DOWN_0].local_xy_vertices()[::-1],
+            flip_normal=True,
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_180].local_xy_vertices(),
+            corners[Rotation.DOWN_270].local_xy_vertices()[::-1],
+            flip_normal=True,
+        )
+    )
+    faces.extend(
+        bridge_arcs(
+            corners[Rotation.UP_270].local_xy_vertices(),
+            corners[Rotation.DOWN_180].local_xy_vertices()[::-1],
+            flip_normal=True,
+        )
+    )
+
+    return faces
+
+
+def bridge_corners(corners):
+
+    faces = []
+
+    faces.extend(bridge_upper_corners(corners))
+    faces.extend(bridge_lower_corners(corners))
+    faces.extend(bridge_upper_to_lower_corners(corners))
+
+    return faces
+
+
+def main():
+
+    corners = GenerateCornerOctants()
+
+    # Combine the octant's faces
+    faces = []
+    for octant in corners.values():
+        faces.extend(octant.faces)
+
+    faces.extend(bridge_corners(corners))
+
+    # Create the mesh
+    octant_mesh = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
+    for i, f in enumerate(faces):
+        octant_mesh.vectors[i] = f
+
+    # Write the mesh to a file
+    octant_mesh.save("sphere.stl", mode=Mode.ASCII)
+
+
+if __name__ == "__main__":
+    main()
