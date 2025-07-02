@@ -13,17 +13,17 @@ CORNER_RADIUS = 1.0
 DOT_RADIUS = 1.5
 
 
-class ConcaveSphereOctant:
+class SphereOctant:
     """Generates a sphere octant mesh."""
 
-    def __init__(self, radius=1.0, resolution=10):
+    def __init__(self, radius=1.0, resolution=10, flip_normals=False):
         self.radius = radius
         self.resolution = resolution
         self.vertices = []
         self.faces = []
-        self.generate_sphere_octant()
+        self.generate_sphere_octant(flip_normals)
 
-    def generate_sphere_octant(self):
+    def generate_sphere_octant(self, flip_normals):
         phi = np.linspace(0, np.pi / 2, self.resolution)
         theta = np.linspace(0, np.pi / 2, self.resolution)
         phi, theta = np.meshgrid(phi, theta)
@@ -51,6 +51,8 @@ class ConcaveSphereOctant:
                     ]
                 )
 
+        if flip_normals:
+            self.faces = [[face[0], face[2], face[1]] for face in self.faces]
         self.faces = np.array(self.faces)
 
     def local_xz_vertices(self):
@@ -199,7 +201,7 @@ def GenerateCornerOctants(dice_size, corner_radius):
 
     sphere_octants = {}
     for rotation in corner_rotation_matrices:
-        octant = ConcaveSphereOctant(radius=corner_radius, resolution=10)
+        octant = SphereOctant(radius=corner_radius, resolution=10)
         octant.translate(np.full([3], dice_size / 2 - corner_radius))
         octant.rotate(corner_rotation_matrices[rotation])
         sphere_octants[rotation] = octant
@@ -314,7 +316,7 @@ def bridge_corners(corners):
     return faces
 
 
-def generate_die_face(rotation, die_size, corner_radius):
+def generate_blank_die_face(rotation, die_size, corner_radius):
     edge_length = die_size / 2 - corner_radius
     p0 = [edge_length, edge_length, die_size / 2]
     p1 = [edge_length, -edge_length, die_size / 2]
@@ -326,14 +328,44 @@ def generate_die_face(rotation, die_size, corner_radius):
             [p0, p3, p2],
         ]
     )
-
     return np.matmul(mesh_faces, face_rotation_matrices[rotation])
+
+
+def generate_one_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    dot_rotations = [
+        CornerRotation.DOWN_0,
+        CornerRotation.DOWN_90,
+        CornerRotation.DOWN_180,
+        CornerRotation.DOWN_270,
+    ]
+    dot_octants = {}
+    for dot_rotation in dot_rotations:
+        octant = SphereOctant(radius=DOT_RADIUS, resolution=10, flip_normals=True)
+        octant.rotate(corner_rotation_matrices[dot_rotation])
+        octant.translate(np.array([0, 0, die_size / 2]))
+        dot_octants[dot_rotation] = octant
+
+    mesh_faces = []
+    for octant in dot_octants.values():
+        mesh_faces.extend(octant.faces)
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
+def generate_die_face(rotation, dot_count, die_size, corner_radius):
+    if dot_count == 0:
+        return generate_blank_die_face(rotation, die_size, corner_radius)
+    else:
+        return generate_one_dot_die_face(rotation, die_size, corner_radius)
 
 
 def generate_die_faces(dice_size, corner_radius):
     mesh_faces = []
     for rotation in face_rotation_matrices:
-        mesh_faces.extend(generate_die_face(rotation, dice_size, corner_radius))
+        mesh_faces.extend(generate_die_face(rotation, 1, dice_size, corner_radius))
     return mesh_faces
 
 
