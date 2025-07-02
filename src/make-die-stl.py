@@ -7,6 +7,12 @@ from enum import Enum
 from stl import mesh, Mode
 
 
+# Dice size parameters in millimeters
+DICE_SIZE = 16.0
+CORNER_RADIUS = 1.0
+DOT_RADIUS = 1.5
+
+
 class ConcaveSphereOctant:
     """Generates a sphere octant mesh."""
 
@@ -130,8 +136,6 @@ octant_rotation_matrices = {
     ],
 }
 
-octant_shift = np.array([1, 1, 1])
-
 
 def bridge_arcs(arc0, arc1, flip_normals=False):
     faces = []
@@ -145,15 +149,15 @@ def bridge_arcs(arc0, arc1, flip_normals=False):
     return faces
 
 
-def GenerateCornerOctants():
+def GenerateCornerOctants(corner_radius, dice_size):
     # Each ConcaveSphereOctant represents a rounded corner of the die (a cube),
     # and the different rotations correspond to the eight corners of the cube,
     # ensuring all corners are covered with the correct orientation.
 
     sphere_octants = {}
     for rotation in octant_rotation_matrices:
-        octant = ConcaveSphereOctant(radius=1.0, resolution=10)
-        octant.translate(octant_shift)
+        octant = ConcaveSphereOctant(radius=corner_radius, resolution=10)
+        octant.translate(np.full([3], dice_size / 2 - corner_radius))
         octant.rotate(octant_rotation_matrices[rotation])
         sphere_octants[rotation] = octant
 
@@ -269,7 +273,7 @@ def bridge_corners(corners):
 
 def main():
 
-    corners = GenerateCornerOctants()
+    corners = GenerateCornerOctants(CORNER_RADIUS, DICE_SIZE)
 
     # Combine the octant's faces
     faces = []
