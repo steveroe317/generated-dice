@@ -149,7 +149,7 @@ def bridge_arcs(arc0, arc1, flip_normals=False):
     return faces
 
 
-def GenerateCornerOctants(corner_radius, dice_size):
+def GenerateCornerOctants(dice_size, corner_radius):
     # Each ConcaveSphereOctant represents a rounded corner of the die (a cube),
     # and the different rotations correspond to the eight corners of the cube,
     # ensuring all corners are covered with the correct orientation.
@@ -273,7 +273,7 @@ def bridge_corners(corners):
 
 def main():
 
-    corners = GenerateCornerOctants(CORNER_RADIUS, DICE_SIZE)
+    corners = GenerateCornerOctants(DICE_SIZE, CORNER_RADIUS)
 
     # Combine the octant's faces
     faces = []
