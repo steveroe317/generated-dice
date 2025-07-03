@@ -419,8 +419,10 @@ def generate_2_dot_die_face(face_rotation, die_size, corner_radius):
     q0 = [0, edge_length, die_size / 2]
     q1 = [0, -edge_length, die_size / 2]
 
-    dot0_center = [edge_length / 2, edge_length / 2, 0]
-    dot1_center = [-edge_length / 2, -edge_length / 2, 0]
+    dot_spread = 0.6
+
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot1_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, p1, q1, q0, dot0_center, die_size))
@@ -475,10 +477,12 @@ def generate_4_dot_die_face(face_rotation, die_size, corner_radius):
 
     s0 = [0, 0, die_size / 2]
 
-    dot0_center = [edge_length / 2, edge_length / 2, 0]
-    dot1_center = [edge_length / 2, -edge_length / 2, 0]
-    dot2_center = [-edge_length / 2, -edge_length / 2, 0]
-    dot3_center = [-edge_length / 2, edge_length / 2, 0]
+    dot_spread = 0.6
+
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot2_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot3_center = [-edge_length * dot_spread, edge_length * dot_spread, 0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, r0, s0, q0, dot0_center, die_size))
@@ -624,7 +628,7 @@ def main():
         octant_mesh.vectors[i] = f
 
     # Write the mesh to a file
-    octant_mesh.save("dice.stl", mode=Mode.ASCII)
+    octant_mesh.save("dice.stl")
 
 
 if __name__ == "__main__":
