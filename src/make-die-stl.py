@@ -10,7 +10,7 @@ from stl import mesh, Mode
 # Dice size parameters in millimeters
 DICE_SIZE = 16.0
 CORNER_RADIUS = 1.0
-DOT_RADIUS = 2.0
+DOT_RADIUS = 1.6
 
 
 class SphereOctant:
@@ -342,10 +342,7 @@ def generate_blank_die_face(rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[rotation])
 
 
-def generate_one_dot_die_face(face_rotation, die_size, corner_radius):
-
-    edge_length = die_size / 2 - corner_radius
-
+def generate_dot_panel(p0, p1, p2, p3, dot_center, die_size):
     dot_rotations = [
         CornerRotation.DOWN_0,
         CornerRotation.DOWN_90,
@@ -356,17 +353,13 @@ def generate_one_dot_die_face(face_rotation, die_size, corner_radius):
     for dot_rotation in dot_rotations:
         octant = SphereOctant(radius=DOT_RADIUS, resolution=10, flip_normals=True)
         octant.rotate(corner_rotation_matrices[dot_rotation])
+        octant.translate(np.array(dot_center))
         octant.translate(np.array([0, 0, die_size / 2]))
         dot_octants[dot_rotation] = octant
 
     mesh_faces = []
     for octant in dot_octants.values():
         mesh_faces.extend(octant.faces)
-
-    p0 = [edge_length, edge_length, die_size / 2]
-    p1 = [edge_length, -edge_length, die_size / 2]
-    p2 = [-edge_length, -edge_length, die_size / 2]
-    p3 = [-edge_length, edge_length, die_size / 2]
 
     mesh_faces.extend(
         bridge_fan(p0, dot_octants[CornerRotation.DOWN_90].local_xy_vertices())
@@ -394,24 +387,214 @@ def generate_one_dot_die_face(face_rotation, die_size, corner_radius):
         [p3, dot_octants[CornerRotation.DOWN_90].local_xy_vertices()[0], p0]
     )
 
+    return mesh_faces
+
+
+def generate_1_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    dot_center = [0, 0, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, p1, p2, p3, dot_center, die_size))
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
+def generate_2_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    q0 = [0, edge_length, die_size / 2]
+    q1 = [0, -edge_length, die_size / 2]
+
+    dot0_center = [edge_length / 2, edge_length / 2, 0]
+    dot1_center = [-edge_length / 2, -edge_length / 2, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, p1, q1, q0, dot0_center, die_size))
+    mesh_faces.extend(generate_dot_panel(q0, q1, p2, p3, dot1_center, die_size))
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
+def generate_3_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    q0 = [edge_length / 3, edge_length, die_size / 2]
+    q1 = [edge_length / 3, -edge_length, die_size / 2]
+
+    r0 = [-edge_length / 3, edge_length, die_size / 2]
+    r1 = [-edge_length / 3, -edge_length, die_size / 2]
+
+    dot_spread = 0.6
+
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot1_center = [0, 0, 0]
+    dot2_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, p1, q1, q0, dot0_center, die_size))
+    mesh_faces.extend(generate_dot_panel(q0, q1, r1, r0, dot1_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r0, r1, p2, p3, dot2_center, die_size))
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
+def generate_4_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    q0 = [0, edge_length, die_size / 2]
+    q1 = [0, -edge_length, die_size / 2]
+
+    r0 = [edge_length, 0, die_size / 2]
+    r1 = [-edge_length, 0, die_size / 2]
+
+    s0 = [0, 0, die_size / 2]
+
+    dot0_center = [edge_length / 2, edge_length / 2, 0]
+    dot1_center = [edge_length / 2, -edge_length / 2, 0]
+    dot2_center = [-edge_length / 2, -edge_length / 2, 0]
+    dot3_center = [-edge_length / 2, edge_length / 2, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, r0, s0, q0, dot0_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r0, p1, q1, s0, dot1_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s0, q1, p2, r1, dot2_center, die_size))
+    mesh_faces.extend(generate_dot_panel(q0, s0, r1, p3, dot3_center, die_size))
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
+def generate_5_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    q0 = [edge_length / 3, edge_length, die_size / 2]
+    q1 = [edge_length / 3, -edge_length, die_size / 2]
+
+    r0 = [-edge_length / 3, edge_length, die_size / 2]
+    r1 = [-edge_length / 3, -edge_length, die_size / 2]
+
+    s0 = [edge_length, 0, die_size / 2]
+    s1 = [edge_length / 3, 0, die_size / 2]
+    s2 = [-edge_length / 3, 0, die_size / 2]
+    s3 = [-edge_length, 0, die_size / 2]
+
+    dot_spread = 0.6
+
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot2_center = [0, 0, 0]
+    dot3_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot4_center = [-edge_length * dot_spread, edge_length * dot_spread, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, s0, s1, q0, dot0_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s0, p1, q1, s1, dot1_center, die_size))
+    mesh_faces.extend(generate_dot_panel(q0, q1, r1, r0, dot2_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s2, r1, p2, s3, dot3_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r0, s2, s3, p3, dot4_center, die_size))
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
+def generate_6_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    q0 = [edge_length / 3, edge_length, die_size / 2]
+    q1 = [edge_length / 3, -edge_length, die_size / 2]
+
+    r0 = [-edge_length / 3, edge_length, die_size / 2]
+    r1 = [-edge_length / 3, -edge_length, die_size / 2]
+
+    s0 = [edge_length, 0, die_size / 2]
+    s1 = [edge_length / 3, 0, die_size / 2]
+    s2 = [-edge_length / 3, 0, die_size / 2]
+    s3 = [-edge_length, 0, die_size / 2]
+
+    dot_spread = 0.6
+
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot2_center = [0, edge_length * dot_spread, 0]
+    dot3_center = [0, -edge_length * dot_spread, 0]
+    dot4_center = [-edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot5_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, s0, s1, q0, dot0_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s0, p1, q1, s1, dot1_center, die_size))
+    mesh_faces.extend(generate_dot_panel(q0, s1, s2, r0, dot2_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s1, q1, r1, s2, dot3_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r0, s2, s3, p3, dot4_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s2, r1, p2, s3, dot5_center, die_size))
+
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
 def generate_die_face(rotation, dot_count, die_size, corner_radius):
-    if dot_count == 0:
-        return generate_blank_die_face(rotation, die_size, corner_radius)
-    else:
-        return generate_one_dot_die_face(rotation, die_size, corner_radius)
+    match dot_count:
+        case 0:
+            return generate_blank_die_face(rotation, die_size, corner_radius)
+        case 1:
+            return generate_1_dot_die_face(rotation, die_size, corner_radius)
+        case 2:
+            return generate_2_dot_die_face(rotation, die_size, corner_radius)
+        case 3:
+            return generate_3_dot_die_face(rotation, die_size, corner_radius)
+        case 4:
+            return generate_4_dot_die_face(rotation, die_size, corner_radius)
+        case 5:
+            return generate_5_dot_die_face(rotation, die_size, corner_radius)
+        case 6:
+            return generate_6_dot_die_face(rotation, die_size, corner_radius)
+        case _:
+            raise ValueError(f"faces with {dot_count} dots not supported")
 
 
 def generate_die_faces(dice_size, corner_radius):
     die_spec = (
         (FaceRotation.TOP, 1),
-        (FaceRotation.BOTTOM, 0),
-        (FaceRotation.LEFT, 1),
-        (FaceRotation.RIGHT, 0),
-        (FaceRotation.FRONT, 1),
-        (FaceRotation.BACK, 0),
+        (FaceRotation.BOTTOM, 6),
+        (FaceRotation.LEFT, 2),
+        (FaceRotation.RIGHT, 5),
+        (FaceRotation.FRONT, 3),
+        (FaceRotation.BACK, 4),
     )
 
     mesh_faces = []
@@ -441,7 +624,7 @@ def main():
         octant_mesh.vectors[i] = f
 
     # Write the mesh to a file
-    octant_mesh.save("sphere.stl", mode=Mode.ASCII)
+    octant_mesh.save("dice.stl", mode=Mode.ASCII)
 
 
 if __name__ == "__main__":
