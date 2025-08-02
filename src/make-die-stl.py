@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Generates a STL file for a set of non-transitive dice plus one standard die."""
+
 import numpy as np
 
 from enum import Enum
@@ -14,16 +16,30 @@ DOT_RADIUS = 1.6
 
 
 class SphereOctant:
-    """Generates a sphere octant mesh."""
+    """A sphere octant mesh."""
 
-    def __init__(self, radius=1.0, resolution=10, flip_normals=False):
+    def __init__(
+        self, radius: float = 1.0, resolution: int = 10, flip_normals: bool = False
+    ):
+        """Initializes the sphere octant.
+
+        The octant contains a list of oriented triangle faces and a grid containing
+        the vertices of the faces.
+
+        Args:
+            radius: The sphere's radius.
+            resolution: The width and height of the vertex grid.
+            flip_normals: If false orient the triangles so that their normals point
+                outwards from the sphere, otherwise orient the triangles so that
+                their normals point inwards.
+        """
         self.radius = radius
         self.resolution = resolution
         self.vertices = []
         self.faces = []
         self.generate_sphere_octant(flip_normals)
 
-    def generate_sphere_octant(self, flip_normals):
+    def generate_sphere_octant(self, flip_normals: bool):
         phi = np.linspace(0, np.pi / 2, self.resolution)
         theta = np.linspace(0, np.pi / 2, self.resolution)
         phi, theta = np.meshgrid(phi, theta)
@@ -56,20 +72,21 @@ class SphereOctant:
         self.faces = np.array(self.faces)
 
     def local_xz_vertices(self):
-        """Returns the vertices in the xz plane."""
+        """Returns the boundary vertices in the octant's local XZ plane."""
         vertices = []
         for j in range(self.resolution):
             vertices.append(self.vertices[0][j])
         return vertices
 
     def local_yz_vertices(self):
+        """Returns the boundary vertices in the octant's local YZ plane."""
         vertices = []
         for j in range(self.resolution):
             vertices.append(self.vertices[-1][j])
         return vertices
 
     def local_xy_vertices(self):
-        """Returns the vertices in the xy plane."""
+        """Returns the boundary vertices in the octant's local XY plane."""
         vertices = []
         for i in range(self.resolution):
             vertices.append(self.vertices[i][-1])
@@ -85,6 +102,9 @@ class SphereOctant:
 
 
 class CornerRotation(Enum):
+    """Encodes a set of rotations that map a die's (1, 1, 1) corner to all
+    corners."""
+
     UP_0 = 0
     UP_90 = 1
     UP_180 = 2
@@ -140,6 +160,8 @@ corner_rotation_matrices = {
 
 
 class FaceRotation(Enum):
+    """Encode a set of rotations that map a die's (0, 0, 1) face to all faces."""
+
     TOP = 0
     BOTTOM = 1
     LEFT = 2
@@ -182,7 +204,18 @@ face_rotation_matrices = {
 }
 
 
-def bridge_arcs(arc0, arc1, flip_normals=False):
+def bridge_arcs(arc0, arc1, flip_normals: bool = False):
+    """Generates a list of triangular faces bridging 2 arcs.
+
+    Args:
+        arc0: A list of points.
+        arc1: A list of points.
+        flip_normals: If false, generate the tirangles with the usual normals,
+            otherwise reverse the normals.
+
+    Returns:
+        the list of faces.
+    """
     faces = []
     for i in range(len(arc0) - 1):
         faces.append([arc0[i], arc0[i + 1], arc1[i]])
@@ -195,6 +228,17 @@ def bridge_arcs(arc0, arc1, flip_normals=False):
 
 
 def bridge_fan(base, arc, flip_normals=False):
+    """Generates a list ot triangular faces briding a point and an arc.
+
+    Args:
+        base: The base point for the fan.
+        arc: A list of points.
+        flip_normals: If false, generate the tirangles with the usual normals,
+            otherwise reverse the normals.
+
+    Returns:
+        the list of faces.
+    """
     faces = []
     for i in range(len(arc) - 1):
         faces.append([base, arc[i], arc[i + 1]])
@@ -205,11 +249,20 @@ def bridge_fan(base, arc, flip_normals=False):
     return faces
 
 
-def GenerateCornerOctants(dice_size, corner_radius):
-    # Each ConcaveSphereOctant represents a rounded corner of the die (a cube),
-    # and the different rotations correspond to the eight corners of the cube,
-    # ensuring all corners are covered with the correct orientation.
+def GenerateCornerOctants(
+    dice_size: float, corner_radius: float
+) -> dict[CornerRotation, SphereOctant]:
+    """Generates SphereOctants for a die's corners.
 
+    The octants are rotated and translated into position for the die.
+
+    Args:
+        dice_size: The distance between opposing die faces.
+        corner_radius: The radius of the die corners.
+
+    Returns:
+        A dictionary mapping corner rotation enums to positioned corner octants.
+    """
     sphere_octants = {}
     for rotation in corner_rotation_matrices:
         octant = SphereOctant(radius=corner_radius, resolution=10)
@@ -220,7 +273,15 @@ def GenerateCornerOctants(dice_size, corner_radius):
     return sphere_octants
 
 
-def bridge_upper_corners(corners):
+def bridge_upper_corners(corners: dict[CornerRotation, SphereOctant]):
+    """Generates rounded edges between the upper corners of a die.
+
+    Args:
+        corners: A dictionary mapping corner rotation enums to positioned corner octants.
+
+    Returns:
+        A list of triangular faces for the rounded edges.
+    """
     faces = []
 
     faces.extend(
@@ -250,7 +311,15 @@ def bridge_upper_corners(corners):
     return faces
 
 
-def bridge_lower_corners(corners):
+def bridge_lower_corners(corners: dict[CornerRotation, SphereOctant]):
+    """Generates rounded edges between the lower corners of a die.
+
+    Args:
+        corners: A dictionary mapping corner rotation enums to positioned corner octants.
+
+    Returns:
+        A list of triangular faces for the rounded edges.
+    """
     faces = []
 
     faces.extend(
@@ -281,7 +350,15 @@ def bridge_lower_corners(corners):
     return faces
 
 
-def bridge_upper_to_lower_corners(corners):
+def bridge_upper_to_lower_corners(corners: dict[CornerRotation, SphereOctant]):
+    """Generates rounded edges between the upperand lower corners of a die.
+
+    Args:
+        corners: A dictionary mapping corner rotation enums to positioned corner octants.
+
+    Returns:
+        A list of triangular faces for the rounded edges.
+    """
     faces = []
 
     faces.extend(
@@ -316,8 +393,15 @@ def bridge_upper_to_lower_corners(corners):
     return faces
 
 
-def bridge_corners(corners):
+def bridge_corners(corners: dict[CornerRotation, SphereOctant]):
+    """Generates rounded edges between the corners of a die.
 
+    Args:
+        corners: A dictionary mapping corner rotation enums to positioned corner octants.
+
+    Returns:
+        A list of triangular faces for the rounded edges.
+    """
     faces = []
 
     faces.extend(bridge_upper_corners(corners))
@@ -327,7 +411,21 @@ def bridge_corners(corners):
     return faces
 
 
-def generate_blank_die_face(rotation, die_size, corner_radius):
+def generate_blank_die_face(
+    rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 0 dots.
+
+    The face is generated as 2 triangles and rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
     p0 = [edge_length, edge_length, die_size / 2]
     p1 = [edge_length, -edge_length, die_size / 2]
@@ -342,7 +440,27 @@ def generate_blank_die_face(rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[rotation])
 
 
-def generate_dot_panel(p0, p1, p2, p3, dot_center, die_size):
+def generate_dot_panel(p0, p1, p2, p3, dot_center, die_size: float):
+    """
+    Generates a single panel for a die face.
+
+    The panel is a rectangle containing one of the die face's dots. The
+    rectangle's corners must be on the upper face of the die with Z =
+    die_size/2. The dot center must be in XY plane with Z = 0.0. The dot's
+    circular footprint must be in the interior of rectangle's projection onto
+    the XY plane.
+
+    Args:
+        p0: The upper left corner of the panel.
+        p1: The upper right corner of the panel.
+        p2: The lower right corner of the panel.
+        p3: The lower right corner of the panel.
+        dot_center: The center point of the dot.
+        die_size: The distance between two opposing die faces.
+
+    Returns:
+        A list of triangular faces for the panel.
+    """
     dot_rotations = [
         CornerRotation.DOWN_0,
         CornerRotation.DOWN_90,
@@ -390,8 +508,21 @@ def generate_dot_panel(p0, p1, p2, p3, dot_center, die_size):
     return mesh_faces
 
 
-def generate_1_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_1_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 1 dot.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -407,8 +538,21 @@ def generate_1_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_2_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_2_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 2 dots.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -416,13 +560,13 @@ def generate_2_dot_die_face(face_rotation, die_size, corner_radius):
     p2 = [-edge_length, -edge_length, die_size / 2]
     p3 = [-edge_length, edge_length, die_size / 2]
 
-    q0 = [0, edge_length, die_size / 2]
-    q1 = [0, -edge_length, die_size / 2]
+    q0 = [0.0, edge_length, die_size / 2]
+    q1 = [0.0, -edge_length, die_size / 2]
 
     dot_spread = 0.6
 
-    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
-    dot1_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0.0]
+    dot1_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0.0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, p1, q1, q0, dot0_center, die_size))
@@ -431,8 +575,21 @@ def generate_2_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_3_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_3_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 3 dots.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -448,9 +605,9 @@ def generate_3_dot_die_face(face_rotation, die_size, corner_radius):
 
     dot_spread = 0.6
 
-    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
-    dot1_center = [0, 0, 0]
-    dot2_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0.0]
+    dot1_center = [0.0, 0.0, 0.0]
+    dot2_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0.0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, p1, q1, q0, dot0_center, die_size))
@@ -460,8 +617,21 @@ def generate_3_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_4_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_4_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 4 dots.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -469,20 +639,20 @@ def generate_4_dot_die_face(face_rotation, die_size, corner_radius):
     p2 = [-edge_length, -edge_length, die_size / 2]
     p3 = [-edge_length, edge_length, die_size / 2]
 
-    q0 = [0, edge_length, die_size / 2]
-    q1 = [0, -edge_length, die_size / 2]
+    q0 = [0.0, edge_length, die_size / 2]
+    q1 = [0.0, -edge_length, die_size / 2]
 
-    r0 = [edge_length, 0, die_size / 2]
-    r1 = [-edge_length, 0, die_size / 2]
+    r0 = [edge_length, 0.0, die_size / 2]
+    r1 = [-edge_length, 0.0, die_size / 2]
 
-    s0 = [0, 0, die_size / 2]
+    s0 = [0.0, 0.0, die_size / 2]
 
     dot_spread = 0.6
 
-    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
-    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0]
-    dot2_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
-    dot3_center = [-edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0.0]
+    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0.0]
+    dot2_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0.0]
+    dot3_center = [-edge_length * dot_spread, edge_length * dot_spread, 0.0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, r0, s0, q0, dot0_center, die_size))
@@ -493,8 +663,21 @@ def generate_4_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_5_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_5_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 5 dots.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -508,18 +691,18 @@ def generate_5_dot_die_face(face_rotation, die_size, corner_radius):
     r0 = [-edge_length / 3, edge_length, die_size / 2]
     r1 = [-edge_length / 3, -edge_length, die_size / 2]
 
-    s0 = [edge_length, 0, die_size / 2]
-    s1 = [edge_length / 3, 0, die_size / 2]
-    s2 = [-edge_length / 3, 0, die_size / 2]
-    s3 = [-edge_length, 0, die_size / 2]
+    s0 = [edge_length, 0.0, die_size / 2]
+    s1 = [edge_length / 3, 0.0, die_size / 2]
+    s2 = [-edge_length / 3, 0.0, die_size / 2]
+    s3 = [-edge_length, 0.0, die_size / 2]
 
     dot_spread = 0.6
 
-    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
-    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0]
-    dot2_center = [0, 0, 0]
-    dot3_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
-    dot4_center = [-edge_length * dot_spread, edge_length * dot_spread, 0]
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0.0]
+    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0.0]
+    dot2_center = [0.0, 0.0, 0.0]
+    dot3_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0.0]
+    dot4_center = [-edge_length * dot_spread, edge_length * dot_spread, 0.0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, s0, s1, q0, dot0_center, die_size))
@@ -531,8 +714,21 @@ def generate_5_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_6_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_6_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 6 dots.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -546,19 +742,19 @@ def generate_6_dot_die_face(face_rotation, die_size, corner_radius):
     r0 = [-edge_length / 3, edge_length, die_size / 2]
     r1 = [-edge_length / 3, -edge_length, die_size / 2]
 
-    s0 = [edge_length, 0, die_size / 2]
-    s1 = [edge_length / 3, 0, die_size / 2]
-    s2 = [-edge_length / 3, 0, die_size / 2]
-    s3 = [-edge_length, 0, die_size / 2]
+    s0 = [edge_length, 0.0, die_size / 2]
+    s1 = [edge_length / 3, 0.0, die_size / 2]
+    s2 = [-edge_length / 3, 0.0, die_size / 2]
+    s3 = [-edge_length, 0.0, die_size / 2]
 
     dot_spread = 0.6
 
-    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0]
-    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0]
-    dot2_center = [0, edge_length * dot_spread, 0]
-    dot3_center = [0, -edge_length * dot_spread, 0]
-    dot4_center = [-edge_length * dot_spread, edge_length * dot_spread, 0]
-    dot5_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0]
+    dot0_center = [edge_length * dot_spread, edge_length * dot_spread, 0.0]
+    dot1_center = [edge_length * dot_spread, -edge_length * dot_spread, 0.0]
+    dot2_center = [0.0, edge_length * dot_spread, 0.0]
+    dot3_center = [0.0, -edge_length * dot_spread, 0.0]
+    dot4_center = [-edge_length * dot_spread, edge_length * dot_spread, 0.0]
+    dot5_center = [-edge_length * dot_spread, -edge_length * dot_spread, 0.0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, s0, s1, q0, dot0_center, die_size))
@@ -571,8 +767,21 @@ def generate_6_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_7_dot_die_face(face_rotation, die_size, corner_radius):
+def generate_7_dot_die_face(
+    face_rotation: FaceRotation, die_size: float, corner_radius: float
+):
+    """Generates a die face with 7 dots.
 
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
     edge_length = die_size / 2 - corner_radius
 
     p0 = [edge_length, edge_length, die_size / 2]
@@ -580,30 +789,30 @@ def generate_7_dot_die_face(face_rotation, die_size, corner_radius):
     p2 = [-edge_length, -edge_length, die_size / 2]
     p3 = [-edge_length, edge_length, die_size / 2]
 
-    q0 = [0, edge_length, die_size / 2]
-    q1 = [0, -edge_length, die_size / 2]
+    q0 = [0.0, edge_length, die_size / 2]
+    q1 = [0.0, -edge_length, die_size / 2]
 
     r0 = [edge_length, edge_length / 3, die_size / 2]
     r1 = [edge_length / 3, edge_length / 3, die_size / 2]
-    r2 = [0, edge_length / 3, die_size / 2]
+    r2 = [0.0, edge_length / 3, die_size / 2]
     r3 = [-edge_length / 3, edge_length / 3, die_size / 2]
     r4 = [-edge_length, edge_length / 3, die_size / 2]
 
     s0 = [edge_length, -edge_length / 3, die_size / 2]
     s1 = [edge_length / 3, -edge_length / 3, die_size / 2]
-    s2 = [0, -edge_length / 3, die_size / 2]
+    s2 = [0.0, -edge_length / 3, die_size / 2]
     s3 = [-edge_length / 3, -edge_length / 3, die_size / 2]
     s4 = [-edge_length, -edge_length / 3, die_size / 2]
 
     dot_spread = 0.6
 
-    dot0_center = [edge_length * dot_spread / 2, edge_length * dot_spread, 0]
-    dot1_center = [-edge_length * dot_spread / 2, edge_length * dot_spread, 0]
-    dot2_center = [edge_length * dot_spread, 0, 0]
-    dot3_center = [0, 0, 0]
-    dot4_center = [-edge_length * dot_spread, 0, 0]
-    dot5_center = [edge_length * dot_spread / 2, -edge_length * dot_spread, 0]
-    dot6_center = [-edge_length * dot_spread / 2, -edge_length * dot_spread, 0]
+    dot0_center = [edge_length * dot_spread / 2, edge_length * dot_spread, 0.0]
+    dot1_center = [-edge_length * dot_spread / 2, edge_length * dot_spread, 0.0]
+    dot2_center = [edge_length * dot_spread, 0.0, 0.0]
+    dot3_center = [0.0, 0.0, 0.0]
+    dot4_center = [-edge_length * dot_spread, 0.0, 0.0]
+    dot5_center = [edge_length * dot_spread / 2, -edge_length * dot_spread, 0.0]
+    dot6_center = [-edge_length * dot_spread / 2, -edge_length * dot_spread, 0.0]
 
     mesh_faces = []
     mesh_faces.extend(generate_dot_panel(p0, r0, r2, q0, dot0_center, die_size))
@@ -617,7 +826,23 @@ def generate_7_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
-def generate_die_face(rotation, dot_count, die_size, corner_radius):
+def generate_die_face(
+    rotation: FaceRotation, dot_count: int, die_size: float, corner_radius: float
+):
+    """Generates a die face with the specified number of dots.
+
+    The face is rotated into position on the die.
+
+    Args:
+        rotation: The rotation to the desired die face.
+        dot_count: The number of dots.
+        die_size: The distance between two opposing die faces.
+        corner_radius:
+
+    Returns:
+        A list of triangular faces for the die face.
+    """
+
     match dot_count:
         case 0:
             return generate_blank_die_face(rotation, die_size, corner_radius)
@@ -639,7 +864,18 @@ def generate_die_face(rotation, dot_count, die_size, corner_radius):
             raise ValueError(f"faces with {dot_count} dots not supported")
 
 
-def generate_die(dice_size, corner_radius, die_spec):
+def generate_die(dice_size: float, corner_radius: float, die_spec):
+    """Generates triangular faces for a die with specified size and face dots.
+
+    Args:
+        die_size: The distance between two opposing die faces.
+        corner_radius: The radius of the die's rounded corners.
+        die_spec: A list of (face_rotation, dot_count) pairs which gives the
+            number of dots on each face of the die.
+
+    Returns:
+        A list of triangular faces for the die.
+    """
     corners = GenerateCornerOctants(DICE_SIZE, CORNER_RADIUS)
 
     faces = []
@@ -654,6 +890,10 @@ def generate_die(dice_size, corner_radius, die_spec):
 
 
 def generate_dice_set():
+    """Generates a set of 4 non-transitive dice plus one standard die.
+
+    The dice are arranged in a cross with the standard die in the center.
+    """
 
     standard_die = generate_die(
         DICE_SIZE,
@@ -735,6 +975,10 @@ def generate_dice_set():
 
 
 def main():
+    """Generates an STL file for a set of non-transitive dice.
+
+    One standard die is included with the set.
+    """
 
     # Create dice wireframe.
     faces = generate_dice_set()
