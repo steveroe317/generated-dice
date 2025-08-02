@@ -571,6 +571,52 @@ def generate_6_dot_die_face(face_rotation, die_size, corner_radius):
     return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
 
 
+def generate_7_dot_die_face(face_rotation, die_size, corner_radius):
+
+    edge_length = die_size / 2 - corner_radius
+
+    p0 = [edge_length, edge_length, die_size / 2]
+    p1 = [edge_length, -edge_length, die_size / 2]
+    p2 = [-edge_length, -edge_length, die_size / 2]
+    p3 = [-edge_length, edge_length, die_size / 2]
+
+    q0 = [0, edge_length, die_size / 2]
+    q1 = [0, -edge_length, die_size / 2]
+
+    r0 = [edge_length, edge_length / 3, die_size / 2]
+    r1 = [edge_length / 3, edge_length / 3, die_size / 2]
+    r2 = [0, edge_length / 3, die_size / 2]
+    r3 = [-edge_length / 3, edge_length / 3, die_size / 2]
+    r4 = [-edge_length, edge_length / 3, die_size / 2]
+
+    s0 = [edge_length, -edge_length / 3, die_size / 2]
+    s1 = [edge_length / 3, -edge_length / 3, die_size / 2]
+    s2 = [0, -edge_length / 3, die_size / 2]
+    s3 = [-edge_length / 3, -edge_length / 3, die_size / 2]
+    s4 = [-edge_length, -edge_length / 3, die_size / 2]
+
+    dot_spread = 0.6
+
+    dot0_center = [edge_length * dot_spread / 2, edge_length * dot_spread, 0]
+    dot1_center = [-edge_length * dot_spread / 2, edge_length * dot_spread, 0]
+    dot2_center = [edge_length * dot_spread, 0, 0]
+    dot3_center = [0, 0, 0]
+    dot4_center = [-edge_length * dot_spread, 0, 0]
+    dot5_center = [edge_length * dot_spread / 2, -edge_length * dot_spread, 0]
+    dot6_center = [-edge_length * dot_spread / 2, -edge_length * dot_spread, 0]
+
+    mesh_faces = []
+    mesh_faces.extend(generate_dot_panel(p0, r0, r2, q0, dot0_center, die_size))
+    mesh_faces.extend(generate_dot_panel(q0, r2, r4, p3, dot1_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r0, s0, s1, r1, dot2_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r1, s1, s3, r3, dot3_center, die_size))
+    mesh_faces.extend(generate_dot_panel(r3, s3, s4, r4, dot4_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s0, p1, q1, s2, dot5_center, die_size))
+    mesh_faces.extend(generate_dot_panel(s2, q1, p2, s4, dot6_center, die_size))
+
+    return np.matmul(mesh_faces, face_rotation_matrices[face_rotation])
+
+
 def generate_die_face(rotation, dot_count, die_size, corner_radius):
     match dot_count:
         case 0:
@@ -587,47 +633,118 @@ def generate_die_face(rotation, dot_count, die_size, corner_radius):
             return generate_5_dot_die_face(rotation, die_size, corner_radius)
         case 6:
             return generate_6_dot_die_face(rotation, die_size, corner_radius)
+        case 7:
+            return generate_7_dot_die_face(rotation, die_size, corner_radius)
         case _:
             raise ValueError(f"faces with {dot_count} dots not supported")
 
 
-def generate_die_faces(dice_size, corner_radius):
-    die_spec = (
-        (FaceRotation.TOP, 1),
-        (FaceRotation.BOTTOM, 6),
-        (FaceRotation.LEFT, 2),
-        (FaceRotation.RIGHT, 5),
-        (FaceRotation.FRONT, 3),
-        (FaceRotation.BACK, 4),
+def generate_die(dice_size, corner_radius, die_spec):
+    corners = GenerateCornerOctants(DICE_SIZE, CORNER_RADIUS)
+
+    faces = []
+
+    for octant in corners.values():
+        faces.extend(octant.faces)
+    faces.extend(bridge_corners(corners))
+    for rotation, dot_count in die_spec:
+        faces.extend(generate_die_face(rotation, dot_count, dice_size, corner_radius))
+
+    return faces
+
+
+def generate_dice_set():
+
+    standard_die = generate_die(
+        DICE_SIZE,
+        CORNER_RADIUS,
+        (
+            (FaceRotation.TOP, 1),
+            (FaceRotation.BOTTOM, 6),
+            (FaceRotation.LEFT, 2),
+            (FaceRotation.RIGHT, 5),
+            (FaceRotation.FRONT, 3),
+            (FaceRotation.BACK, 4),
+        ),
     )
 
-    mesh_faces = []
-    for rotation, dot_count in die_spec:
-        mesh_faces.extend(
-            generate_die_face(rotation, dot_count, dice_size, corner_radius)
-        )
-    return mesh_faces
+    red_die = generate_die(
+        DICE_SIZE,
+        CORNER_RADIUS,
+        (
+            (FaceRotation.TOP, 1),
+            (FaceRotation.BOTTOM, 5),
+            (FaceRotation.LEFT, 1),
+            (FaceRotation.RIGHT, 5),
+            (FaceRotation.FRONT, 5),
+            (FaceRotation.BACK, 5),
+        ),
+    )
+    red_die = np.add(red_die, [3 * DICE_SIZE, 0, 0])
+
+    white_die = generate_die(
+        DICE_SIZE,
+        CORNER_RADIUS,
+        (
+            (FaceRotation.TOP, 6),
+            (FaceRotation.BOTTOM, 2),
+            (FaceRotation.LEFT, 6),
+            (FaceRotation.RIGHT, 2),
+            (FaceRotation.FRONT, 6),
+            (FaceRotation.BACK, 2),
+        ),
+    )
+    white_die = np.add(white_die, [0, 3 * DICE_SIZE, 0])
+
+    blue_die = generate_die(
+        DICE_SIZE,
+        CORNER_RADIUS,
+        (
+            (FaceRotation.TOP, 7),
+            (FaceRotation.BOTTOM, 3),
+            (FaceRotation.LEFT, 7),
+            (FaceRotation.RIGHT, 3),
+            (FaceRotation.FRONT, 3),
+            (FaceRotation.BACK, 3),
+        ),
+    )
+    blue_die = np.add(blue_die, [-3 * DICE_SIZE, 0, 0])
+
+    black_die = generate_die(
+        DICE_SIZE,
+        CORNER_RADIUS,
+        (
+            (FaceRotation.TOP, 4),
+            (FaceRotation.BOTTOM, 4),
+            (FaceRotation.LEFT, 4),
+            (FaceRotation.RIGHT, 4),
+            (FaceRotation.FRONT, 4),
+            (FaceRotation.BACK, 4),
+        ),
+    )
+    black_die = np.add(black_die, [0, -3 * DICE_SIZE, 0])
+
+    faces = []
+    faces.extend(standard_die)
+    faces.extend(red_die)
+    faces.extend(white_die)
+    faces.extend(blue_die)
+    faces.extend(black_die)
+
+    return faces
 
 
 def main():
 
-    corners = GenerateCornerOctants(DICE_SIZE, CORNER_RADIUS)
+    # Create dice wireframe.
+    faces = generate_dice_set()
 
-    # Combine the octant's faces
-    faces = []
-    for octant in corners.values():
-        faces.extend(octant.faces)
-
-    faces.extend(bridge_corners(corners))
-
-    faces.extend(generate_die_faces(DICE_SIZE, CORNER_RADIUS))
-
-    # Create the mesh
+    # Create the STL mesh from the wireframe.
     octant_mesh = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
     for i, f in enumerate(faces):
         octant_mesh.vectors[i] = f
 
-    # Write the mesh to a file
+    # Write the mesh to a file.
     octant_mesh.save("dice.stl")
 
 
