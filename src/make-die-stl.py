@@ -6,7 +6,7 @@
 import numpy as np
 
 from enum import Enum
-from stl import mesh, Mode
+from stl import mesh
 
 
 # Dice size parameters in millimeters
